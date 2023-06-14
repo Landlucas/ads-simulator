@@ -1,0 +1,10 @@
+{
+  "name": "ads-simulator",
+  "version": "1.0.0",
+  "packageManager": "yarn@3.4.1",
+  "type": "module",
+  "main": "src/main.js",
+  "dependencies": {
+    "@sinonjs/fake-timers": "^11.0.0"
+  }
+}
