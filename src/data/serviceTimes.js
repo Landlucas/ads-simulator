@@ -1,4 +1,4 @@
-export const timeOfServices = [
+export const serviceTimes = [
   12, 14, 9, 14, 10, 10, 12, 12, 14, 13, 11, 9, 11, 12, 9, 12, 12, 14, 8, 11, 8,
   8, 13, 11, 9, 14, 10, 12, 9, 8, 12, 10, 12, 14, 12, 12, 9, 14, 14, 14, 12, 13,
   13, 13, 10, 10, 9, 8, 10, 12, 11, 12, 8, 8, 13, 13, 10, 10, 12, 14, 13, 8, 9,
@@ -13,4 +13,4 @@ export const timeOfServices = [
   8, 12, 9, 9, 9, 11, 13, 14, 13, 8, 11, 14, 10, 9, 13, 11, 13, 10, 13, 10,
 ];
 
-export default timeOfServices;
+export default serviceTimes;
