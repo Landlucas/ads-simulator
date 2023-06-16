@@ -1,4 +1,4 @@
-import { debugLog } from "./logging.js";
+import { Log } from "gudangjs";
 
 export const generateHistogram = (jobList, metricFn, min, max, samples = 10) => {
   const step = Math.round((max - min) / samples);
@@ -15,7 +15,7 @@ export const generateHistogram = (jobList, metricFn, min, max, samples = 10) => 
     for (let i = Scale.min; i <= Scale.max; i += Scale.step) {
       if (metric <= i) {
         histogram[i] += 1;
-        debugLog(`Metric: ${metric} <= i: ${i}`);
+        Log.debug(`Metric: ${metric} <= i: ${i}`);
         break;
       }
     }

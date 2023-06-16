@@ -1,14 +1,19 @@
 import FakeTimers from "@sinonjs/fake-timers";
+import { ConsoleLogAppender, Log, LogLevel, RawLogFormatter } from "gudangjs";
 
 import staticArrivalTimes from "./data/arrivalTimes.js";
 import staticServiceTimes from "./data/serviceTimes.js";
 import delay from "./utils/delay.js";
 import { generateHistogram } from "./utils/histogram.js";
-import { debugLog, log } from "./utils/logging.js";
 import processNamedArguments from "./utils/processNamedArguments.js";
 import { getBellCurveRandomNumbers, getRandomNumbersInRange } from "./utils/randomNumbers.js";
 
+Log.setAppenders([new ConsoleLogAppender(new RawLogFormatter())]);
+
 const args = processNamedArguments();
+if (args["debug"]) {
+  Log.level = LogLevel.DEBUG;
+}
 
 let arrivalTimes = [];
 let serviceTimes = [];
@@ -22,7 +27,7 @@ let clock;
 let totalJobs = 0;
 
 const initSimulation = async () => {
-  log("initializing simulation...");
+  Log.info("initializing simulation...");
 
   clock = FakeTimers.install({
     shouldAdvanceTime: true,
@@ -56,7 +61,7 @@ const initSimulation = async () => {
     );
   }
 
-  log(`simulation started with ${arrivalTimes.length} incoming arrivals...`);
+  Log.info(`simulation started with ${arrivalTimes.length} incoming arrivals...`);
   const arrivalTime = arrivalTimes.shift();
   setTimeout(() => simulateArrivals(), arrivalTime);
 };
@@ -74,14 +79,14 @@ const simulateArrivals = async () => {
     serviceDuration: serviceTimes[id],
   };
   queue.push(job);
-  debugLog(`job ${job.id} arrived at time ${job.arrivalTime}`);
+  Log.debug(`job ${job.id} arrived at time ${job.arrivalTime}`);
   serveJob();
 
   if (arrivalTimes.length === 0) {
     while (servers.find((server) => server.status === "busy")) {
       await delay(1);
     }
-    log("arrivals ended and all jobs finished, stopping simulation...");
+    Log.info("arrivals ended and all jobs finished, stopping simulation...");
     showResults();
     process.exit(0);
   }
@@ -90,7 +95,7 @@ const simulateArrivals = async () => {
 const serveJob = async () => {
   if (queue.length > 0) {
     if (!servers.find((server) => server.status === "idle")) {
-      debugLog("all servers busy, keeping jobs in queue");
+      Log.debug("all servers busy, keeping jobs in queue");
       return;
     }
     for (const server of servers) {
@@ -110,7 +115,7 @@ const assignJob = (server) => {
   server.totalIdleTime += Date.now() - server.idleStartTime;
   server.idleStartTime = null;
 
-  debugLog(
+  Log.debug(
     `server ${server.id} is now busy with job ${server.currentJob.id}`
   );
 
@@ -132,7 +137,7 @@ const completeJob = (server, serviceFinishTime) => {
   job.serviceFinishTime = serviceFinishTime;
   completedJobs.push(job);
 
-  debugLog(
+  Log.debug(
     `job ${job.id} finished at ${serviceFinishTime} by server ${server.id}`
   );
 
@@ -146,7 +151,7 @@ const showResults = () => {
     return sum + obj.totalIdleTime;
   }, 0);
   const averageIdleTime = totalIdleTime / servers.length;
-  log(`average server idle time: ${averageIdleTime}`);
+  Log.info(`average server idle time: ${averageIdleTime}`);
 
   let minTimeDiff = 9999999;
   let maxTimeDiff = 0;
@@ -157,21 +162,21 @@ const showResults = () => {
     return sum + timeDiff;
   }, 0);
   const averageQueue = totalQueueTime / completedJobs.length;
-  log(`average time in queue: ${averageQueue}`);
+  Log.info(`average time in queue: ${averageQueue}`);
 
   const queueTimeHistogram = generateHistogram(completedJobs,
     (obj) => Math.round(obj.serviceStartTime - obj.arrivalTime),
     minTimeDiff, maxTimeDiff
   );
 
-  debugLog(`histogram: ${JSON.stringify(queueTimeHistogram)}`);
+  Log.debug(`histogram: ${JSON.stringify(queueTimeHistogram)}`);
 
   const totalSum = completedJobs.reduce((sum, obj) => {
     const timeDiff = obj.serviceFinishTime - obj.arrivalTime;
     return sum + timeDiff;
   }, 0);
   const averageSum = totalSum / completedJobs.length;
-  log(`average time between arrival and end of service: ${averageSum}`);
+  Log.info(`average time between arrival and end of service: ${averageSum}`);
 }
 
 initSimulation();

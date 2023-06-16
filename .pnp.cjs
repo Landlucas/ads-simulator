@@ -29,7 +29,8 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./",\
           "packageDependencies": [\
             ["@sinonjs/fake-timers", "npm:11.0.0"],\
-            ["eslint", "npm:8.42.0"]\
+            ["eslint", "npm:8.42.0"],\
+            ["gudangjs", "npm:1.1.6"]\
           ],\
           "linkType": "SOFT"\
         }]\
@@ -211,7 +212,8 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [\
             ["ads-simulator", "workspace:."],\
             ["@sinonjs/fake-timers", "npm:11.0.0"],\
-            ["eslint", "npm:8.42.0"]\
+            ["eslint", "npm:8.42.0"],\
+            ["gudangjs", "npm:1.1.6"]\
           ],\
           "linkType": "SOFT"\
         }]\
@@ -633,6 +635,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/graphemer-npm-1.4.0-0627732d35-bab8f0be9b.zip/node_modules/graphemer/",\
           "packageDependencies": [\
             ["graphemer", "npm:1.4.0"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
+      ["gudangjs", [\
+        ["npm:1.1.6", {\
+          "packageLocation": "./.yarn/cache/gudangjs-npm-1.1.6-030872b9bb-8090df32b3.zip/node_modules/gudangjs/",\
+          "packageDependencies": [\
+            ["gudangjs", "npm:1.1.6"]\
           ],\
           "linkType": "HARD"\
         }]\
