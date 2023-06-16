@@ -22,12 +22,17 @@ export const getBellCurveRandomNumbers = (mean, standardDeviation, count) => {
 };
 
 export const getRandomNumbersInRange = (min, max, count) => {
-  const interval = (max - min) / count;
+  const interval = (max + 1 - min) / count;
   const numbers = [];
 
   for (let i = 0; i < count; i++) {
     const randomNumber = Math.random() * interval + min + (interval * i);
-    numbers.push(randomNumber);
+    numbers.push(~~randomNumber);
+  }
+
+  for (let i = numbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
   }
 
   return numbers;
