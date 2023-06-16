@@ -3,7 +3,7 @@ import FakeTimers from "@sinonjs/fake-timers";
 import staticArrivalTimes from "./data/arrivalTimes.js";
 import staticServiceTimes from "./data/serviceTimes.js";
 import delay from "./utils/delay.js";
-import saveFile from "./utils/saveFile.js";
+import { generateHistogram } from "./utils/histogram.js";
 import processNamedArguments from "./utils/processNamedArguments.js";
 import { getBellCurveRandomNumbers, getRandomNumbersInRange } from "./utils/randomNumbers.js";
 import { log, debugLog } from "./utils/logging.js";
@@ -50,6 +50,8 @@ const initSimulation = async () => {
       {
         id: i,
         status: "idle",
+        idleStartTime: 0,
+        totalIdleTime: 0,
       },
     );
   }
@@ -80,7 +82,7 @@ const simulateArrivals = async () => {
       await delay(1);
     }
     log("arrivals ended and all jobs finished, stopping simulation...");
-    await showResults();
+    showResults();
     process.exit(0);
   }
 };
@@ -104,6 +106,9 @@ const assignJob = (server) => {
   server.status = "busy";
   server.currentJob = queue.shift();
   server.currentJob.serviceStartTime = Date.now();
+
+  server.totalIdleTime += Date.now() - server.idleStartTime;
+  server.idleStartTime = null;
 
   debugLog(
     `server ${server.id} is now busy with job ${server.currentJob.id}`
@@ -130,40 +135,36 @@ const completeJob = (server, serviceFinishTime) => {
   debugLog(
     `job ${job.id} finished at ${serviceFinishTime} by server ${server.id}`
   );
+
+  server.idleStartTime = Date.now();
+
   serveJob();
 };
 
-const showResults = async () => {
-  const histogramQueueTimes = completedJobs.reduce((histogram, obj) => {
-    const timeDiff = obj.serviceStartTime - obj.arrivalTime;
-    const roundedTimeDiff = Math.round(timeDiff);
-    if (histogram[roundedTimeDiff]) {
-      histogram[roundedTimeDiff] += 1;
-    } else {
-      histogram[roundedTimeDiff] = 1;
-    }
-    return histogram;
-  }, {});
+const showResults = () => {
+  const totalIdleTime = servers.reduce((sum, obj) => {
+    return sum + obj.totalIdleTime;
+  }, 0);
+  const averageIdleTime = totalIdleTime / servers.length;
+  log(`average server idle time: ${averageIdleTime}`);
 
-  await saveFile(`histograms.json`, JSON.stringify({
-    histogramQueueTimes,
-  }));
-  debugLog('The file histograms.json has been saved!');
-
+  let minTimeDiff = 9999999;
+  let maxTimeDiff = 0;
   const totalQueueTime = completedJobs.reduce((sum, obj) => {
     const timeDiff = obj.serviceStartTime - obj.arrivalTime;
+    if (timeDiff < minTimeDiff) minTimeDiff = timeDiff;
+    if (timeDiff > maxTimeDiff) maxTimeDiff = timeDiff;
     return sum + timeDiff;
   }, 0);
   const averageQueue = totalQueueTime / completedJobs.length;
-
   log(`average time in queue: ${averageQueue}`);
+  generateHistogram(completedJobs, minTimeDiff, maxTimeDiff);
 
   const totalSum = completedJobs.reduce((sum, obj) => {
     const timeDiff = obj.serviceFinishTime - obj.arrivalTime;
     return sum + timeDiff;
   }, 0);
   const averageSum = totalSum / completedJobs.length;
-
   log(`average time between arrival and end of service: ${averageSum}`);
 }
 
