@@ -6,7 +6,7 @@ export const processNamedArguments = () => {
   for (let i = 0; i < args.length; i += 2) {
     const argName = args[i].replace(/^--/, '');
     const argValue = args[i + 1];
-    namedArgs[argName] = argValue;
+    namedArgs[argName] = argValue ? argValue : "";
   }
 
   return namedArgs;

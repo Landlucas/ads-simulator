@@ -5,6 +5,7 @@ import staticServiceTimes from "./data/serviceTimes.js";
 import delay from "./utils/delay.js";
 import processNamedArguments from "./utils/processNamedArguments.js";
 import { getBellCurveRandomNumbers, getRandomNumbersInRange } from "./utils/randomNumbers.js";
+import { log, debugLog } from "./utils/logging.js";
 
 const args = processNamedArguments();
 
@@ -20,7 +21,7 @@ let clock;
 let totalJobs = 0;
 
 const initSimulation = async () => {
-  console.log("initializing simulation...");
+  log("initializing simulation...");
 
   clock = FakeTimers.install({
     shouldAdvanceTime: true,
@@ -52,7 +53,7 @@ const initSimulation = async () => {
     );
   }
 
-  console.log(`starting ${arrivalTimes.length} arrivals...`);
+  log(`simulation started with ${arrivalTimes.length} incoming arrivals...`);
   const arrivalTime = arrivalTimes.shift();
   setTimeout(() => simulateArrivals(), arrivalTime);
 };
@@ -66,18 +67,19 @@ const simulateArrivals = async () => {
   const id = ++totalJobs;
   const job = {
     id: id,
-    arrival: Date.now(),
-    serviceTime: serviceTimes[id],
+    arrivalTime: Date.now(),
+    serviceDuration: serviceTimes[id],
   };
   queue.push(job);
-  console.log(`job ${job.id} arrived at ${job.arrival}`);
+  debugLog(`job ${job.id} arrived at time ${job.arrivalTime}`);
   serveJob();
 
   if (arrivalTimes.length === 0) {
     while (servers.find((server) => server.status === "busy")) {
       await delay(1);
     }
-    console.log("arrivals ended and all jobs finished, stopping simulation...");
+    log("arrivals ended and all jobs finished, stopping simulation...");
+    showResults()
     process.exit(0);
   }
 };
@@ -85,7 +87,7 @@ const simulateArrivals = async () => {
 const serveJob = async () => {
   if (queue.length > 0) {
     if (!servers.find((server) => server.status === "idle")) {
-      console.log("all servers busy, keeping jobs in queue");
+      debugLog("all servers busy, keeping jobs in queue");
       return;
     }
     for (const server of servers) {
@@ -100,33 +102,52 @@ const serveJob = async () => {
 const assignJob = (server) => {
   server.status = "busy";
   server.currentJob = queue.shift();
+  server.currentJob.serviceStartTime = Date.now();
 
-  console.log(
-    `server "${server.id}" is now busy with job ${server.currentJob.id}`
+  debugLog(
+    `server ${server.id} is now busy with job ${server.currentJob.id}`
   );
 
   setTimeout(() => {
-    const completionTime = new Date().getTime();
-    completeJob(server, completionTime);
-  }, server.currentJob.serviceTime);
+    const serviceFinishTime = Date.now();
+    completeJob(server, serviceFinishTime);
+  }, server.currentJob.serviceDuration);
 
   if (!args["realtime"]) {
     clock.next();
   }
 };
 
-const completeJob = (server, completionTime) => {
+const completeJob = (server, serviceFinishTime) => {
   const job = server.currentJob;
   server.currentJob = null;
   server.status = "idle";
 
-  job.completionTime = completionTime;
+  job.serviceFinishTime = serviceFinishTime;
   completedJobs.push(job);
 
-  console.log(
-    `job ${job.id} completed at ${completionTime} by server "${server.id}"`
+  debugLog(
+    `job ${job.id} finished at ${serviceFinishTime} by server ${server.id}`
   );
   serveJob();
 };
+
+const showResults = () => {
+  const totalQueueTime = completedJobs.reduce((sum, obj) => {
+    const timeDiff = obj.serviceStartTime - obj.arrivalTime;
+    return sum + timeDiff;
+  }, 0);
+  const averageQueue = totalQueueTime / completedJobs.length;
+
+  log(`average time in queue: ${averageQueue}`);
+
+  const totalSum = completedJobs.reduce((sum, obj) => {
+    const timeDiff = obj.serviceFinishTime - obj.arrivalTime;
+    return sum + timeDiff;
+  }, 0);
+  const averageSum = totalSum / completedJobs.length;
+
+  log(`average time between arrival and end of service: ${averageSum}`);
+}
 
 initSimulation();
