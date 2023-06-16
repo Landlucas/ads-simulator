@@ -4,9 +4,9 @@ import staticArrivalTimes from "./data/arrivalTimes.js";
 import staticServiceTimes from "./data/serviceTimes.js";
 import delay from "./utils/delay.js";
 import { generateHistogram } from "./utils/histogram.js";
+import { debugLog, log } from "./utils/logging.js";
 import processNamedArguments from "./utils/processNamedArguments.js";
 import { getBellCurveRandomNumbers, getRandomNumbersInRange } from "./utils/randomNumbers.js";
-import { log, debugLog } from "./utils/logging.js";
 
 const args = processNamedArguments();
 
@@ -158,7 +158,13 @@ const showResults = () => {
   }, 0);
   const averageQueue = totalQueueTime / completedJobs.length;
   log(`average time in queue: ${averageQueue}`);
-  generateHistogram(completedJobs, minTimeDiff, maxTimeDiff);
+
+  const queueTimeHistogram = generateHistogram(completedJobs,
+    (obj) => Math.round(obj.serviceStartTime - obj.arrivalTime),
+    minTimeDiff, maxTimeDiff
+  );
+
+  debugLog(`histogram: ${JSON.stringify(queueTimeHistogram)}`);
 
   const totalSum = completedJobs.reduce((sum, obj) => {
     const timeDiff = obj.serviceFinishTime - obj.arrivalTime;

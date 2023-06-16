@@ -1,40 +1,37 @@
-import saveFile from "./saveFile.js";
 import { debugLog } from "./logging.js";
 
-export const generateHistogram = (jobList, min, max) => {
-  const step = Math.round((max - min) / 10);
+export const generateHistogram = (jobList, metricFn, min, max, samples = 10) => {
+  const step = Math.round((max - min) / samples);
   const Scale = { min: step, max: max, step: step };
-  const histogram = {};
+
+  let histogram = {};
   for (let i = Scale.min; i <= Scale.max; i += Scale.step) {
     histogram[i] = 0;
   }
 
   jobList.forEach((obj) => {
-    const timeDiff = obj.serviceStartTime - obj.arrivalTime;
-    const roundedTimeDiff = Math.round(timeDiff);
+    const metric = metricFn(obj);
 
     for (let i = Scale.min; i <= Scale.max; i += Scale.step) {
-      if (roundedTimeDiff <= i) {
+      if (metric <= i) {
         histogram[i] += 1;
-        debugLog(`roundedTimeDiff: ${roundedTimeDiff} <= i: ${i}`);
-        return;
+        debugLog(`Metric: ${metric} <= i: ${i}`);
+        break;
       }
     }
   });
 
-  let lastKey = -1;
-  for (let key of Object.keys(histogram)) {
-    histogram[`${lastKey + 1} - ${key}`] = histogram[key];
-    delete histogram[key];
-    lastKey = parseInt(key);
-  }
+  return adjustKeysToRange(histogram);
+}
 
-  saveFile(
-    `histogram.json`,
-    JSON.stringify({
-      histogram,
+function adjustKeysToRange(histogram) {
+  let lastKey = -1;
+  return Object.fromEntries(
+    Object.entries(histogram).map(([key, val]) => {
+      const newKey = `${lastKey + 1} - ${key}`;
+      lastKey = parseInt(key);
+      return [newKey, val];
     })
   );
 
-  debugLog("The file histogram.json has been saved!");
 }
