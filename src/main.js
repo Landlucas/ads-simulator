@@ -3,6 +3,7 @@ import FakeTimers from "@sinonjs/fake-timers";
 import staticArrivalTimes from "./data/arrivalTimes.js";
 import staticServiceTimes from "./data/serviceTimes.js";
 import delay from "./utils/delay.js";
+import saveFile from "./utils/saveFile.js";
 import processNamedArguments from "./utils/processNamedArguments.js";
 import { getBellCurveRandomNumbers, getRandomNumbersInRange } from "./utils/randomNumbers.js";
 import { log, debugLog } from "./utils/logging.js";
@@ -33,7 +34,7 @@ const initSimulation = async () => {
     if (!isNaN(args["randomize"])) {
       numberOfRandomJobs = args["randomize"];
     }
-    arrivalTimes = getBellCurveRandomNumbers(4.63, 1.95, numberOfRandomJobs);
+    arrivalTimes = getBellCurveRandomNumbers(4.628, 1.949, numberOfRandomJobs);
     serviceTimes = getRandomNumbersInRange(8, 14, numberOfRandomJobs);
   } else {
     arrivalTimes = staticArrivalTimes;
@@ -79,7 +80,7 @@ const simulateArrivals = async () => {
       await delay(1);
     }
     log("arrivals ended and all jobs finished, stopping simulation...");
-    showResults()
+    await showResults();
     process.exit(0);
   }
 };
@@ -132,7 +133,23 @@ const completeJob = (server, serviceFinishTime) => {
   serveJob();
 };
 
-const showResults = () => {
+const showResults = async () => {
+  const histogramQueueTimes = completedJobs.reduce((histogram, obj) => {
+    const timeDiff = obj.serviceStartTime - obj.arrivalTime;
+    const roundedTimeDiff = Math.round(timeDiff);
+    if (histogram[roundedTimeDiff]) {
+      histogram[roundedTimeDiff] += 1;
+    } else {
+      histogram[roundedTimeDiff] = 1;
+    }
+    return histogram;
+  }, {});
+
+  await saveFile(`histograms.json`, JSON.stringify({
+    histogramQueueTimes,
+  }));
+  debugLog('The file histograms.json has been saved!');
+
   const totalQueueTime = completedJobs.reduce((sum, obj) => {
     const timeDiff = obj.serviceStartTime - obj.arrivalTime;
     return sum + timeDiff;
