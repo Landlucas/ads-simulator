@@ -1,7 +1,7 @@
 export const getBellCurveRandomNumbers = (mean, standardDeviation, count) => {
   const numbers = [];
-  
-  for (let i = 0; i < count; i++) {
+
+  const generateBellCurveRandomNumber = () => {
     let u = 0;
     let v = 0;
     let s = 0;
@@ -13,9 +13,15 @@ export const getBellCurveRandomNumbers = (mean, standardDeviation, count) => {
     } while (s === 0 || s >= 1);
 
     const multiplier = Math.sqrt((-2 * Math.log(s)) / s);
-    const randomNumber = mean + standardDeviation * u * multiplier;
-
-    numbers.push(randomNumber);
+    return mean + standardDeviation * u * multiplier;
+  };
+  
+  for (let i = 0; i < count; i++) {
+    let randomNumber = 0;
+    while (randomNumber <= 0) {
+      randomNumber = generateBellCurveRandomNumber();
+    }
+    numbers.push(~~randomNumber);
   }
 
   return numbers;
