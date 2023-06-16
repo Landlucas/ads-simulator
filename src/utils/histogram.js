@@ -1,35 +1,30 @@
 import { Log } from "gudangjs";
 
 export const generateHistogram = (jobList, metricFn, min, max, samples = 10) => {
-  const step = Math.round((max - min) / samples);
-  const Scale = { min: step, max: max, step: step };
+  const step = Math.ceil((max - min) / samples);
+  const Scale = { min: step, max: step * samples, step };
 
-  let histogram = {};
+  let histogram = new Map();
   for (let i = Scale.min; i <= Scale.max; i += Scale.step) {
-    histogram[i] = 0;
+    histogram.set(i, 0);
   }
 
-  jobList.forEach((obj) => {
+  jobList.forEach(obj => {
     const metric = metricFn(obj);
-
-    for (let i = Scale.min; i <= Scale.max; i += Scale.step) {
-      if (metric <= i) {
-        histogram[i] += 1;
-        Log.debug(`Metric: ${metric} <= i: ${i}`);
-        break;
-      }
-    }
+    const key = Math.floor(metric / step) * step + step;
+    Log.debug(`Metric: ${metric}, Key: ${key}`);
+    histogram.set(key, histogram.get(key) + 1);
   });
 
   return adjustKeysToRange(histogram);
-}
+};
 
 function adjustKeysToRange(histogram) {
   let lastKey = -1;
   return Object.fromEntries(
-    Object.entries(histogram).map(([key, val]) => {
+    Array.from(histogram.entries()).map(([key, val]) => {
       const newKey = `${lastKey + 1} - ${key}`;
-      lastKey = parseInt(key);
+      lastKey = key;
       return [newKey, val];
     })
   );
